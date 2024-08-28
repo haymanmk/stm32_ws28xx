@@ -21,6 +21,8 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include "ws28xx_pwm.h"
+#include "math.h"
 
 /* USER CODE END Includes */
 
@@ -94,16 +96,50 @@ int main(void)
   MX_DMA_Init();
   MX_TIM3_Init();
   /* USER CODE BEGIN 2 */
+  ws28xx_pwm_init(&htim3, TIM_CHANNEL_1);
+
+  // set the color of the LED
+  // ws28xx_pwm_set_color(16, 0, 8, 0);
+  // ws28xx_pwm_set_color(0, 16, 0, 1);
+  // ws28xx_pwm_set_color(0, 0, 16, 2);
+  // ws28xx_pwm_set_color(16, 16, 0, 3);
+
+  // start the PWM signal generation
+  // ws28xx_pwm_update();
 
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
+  float current_rgb = 8;
+  int8_t inc_rgb = 0;
+  float x = 0;
   while (1)
   {
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
+    // ws28xx_pwm_set_color(inc_rgb%max_rgb, (4+inc_rgb)%max_rgb, (8+inc_rgb)%max_rgb, 0);
+    // ws28xx_pwm_set_color((4+inc_rgb)%max_rgb, (8+inc_rgb)%max_rgb, (0+inc_rgb)%max_rgb, 1);
+    // ws28xx_pwm_set_color((8+inc_rgb)%max_rgb, (0+inc_rgb)%max_rgb, (4+inc_rgb)%max_rgb, 2);
+    // ws28xx_pwm_set_color((4+inc_rgb)%max_rgb, (8+inc_rgb)%max_rgb, (4+inc_rgb)%max_rgb, 3);
+    // ws28xx_pwm_set_color((8+inc_rgb)%max_rgb, (4+inc_rgb)%max_rgb, (8+inc_rgb)%max_rgb, 4);
+
+    // blinking
+    // if (inc_rgb % 2) ws28xx_pwm_set_color_all(16, 0, 0);
+    // else ws28xx_pwm_set_color_all_off();
+
+    // breathing
+    ws28xx_pwm_set_color_all((uint8_t)current_rgb, 0, 0);
+
+    ws28xx_pwm_update();
+
+    current_rgb = 16 + 15 * sin(1.5*x);
+
+    x += 0.1;
+
+    // delay few seconds
+    HAL_Delay(50);
   }
   /* USER CODE END 3 */
 }
@@ -360,6 +396,23 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
+void HAL_TIM_PWM_PulseFinishedHalfCpltCallback(TIM_HandleTypeDef *htim)
+{
+  // turn on PD3 ===> DEBUG_1
+  HAL_GPIO_WritePin(DEBUG_1_GPIO_Port, DEBUG_1_Pin, GPIO_PIN_SET);
+  ws28xx_pwm_dma_half_complete_callback();
+  // turn off PD3 ===> DEBUG_1
+  HAL_GPIO_WritePin(DEBUG_1_GPIO_Port, DEBUG_1_Pin, GPIO_PIN_RESET);
+}
+
+void HAL_TIM_PWM_PulseFinishedCallback(TIM_HandleTypeDef *htim)
+{
+  // turn on PD4 ===> DEBUG_2
+  HAL_GPIO_WritePin(DEBUG_2_GPIO_Port, DEBUG_2_Pin, GPIO_PIN_SET);
+  ws28xx_pwm_dma_complete_callback();
+  // turn off PD4 ===> DEBUG_2
+  HAL_GPIO_WritePin(DEBUG_2_GPIO_Port, DEBUG_2_Pin, GPIO_PIN_RESET);
+}
 
 /* USER CODE END 4 */
 
